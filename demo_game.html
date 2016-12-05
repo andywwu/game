@@ -1,0 +1,207 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html lang="en">
+<head>
+	<meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+	<title>游戏——扫雷</title>
+	<script src="jquery.js"></script>
+	<script>
+	$(function(){
+		var count=20;
+		// 分两次获取$("div")，$("div")与$("div")是两个不同的对象,类似于var obj={}与var obj2={}
+
+		// $("div").data("aa","1");//在元素上存放数据,返回jQuery对象。(在一个div上存取数据)
+		// $("div").data("aa")//(获取div上的数据)
+		//创建界面
+		do{
+			$(".scene").empty();//若雷的个数不是20 ，则清空 重新创建
+			//创建div
+			for (var i = 0; i < 10; i++) {
+				for (var j = 0; j < 10; j++) {
+					var islei=Math.random()>0.8;   //true/false
+					// $("<div></div>",{class:"block"}).appendTo($(".scene"))
+					$("<div></div>").addClass(function(){
+						return "block"+(islei?" lei":"")//随即添加雷20%
+					}).mousedown(mousedownhandler).data("pos",{x:i,y:j}).attr("id",i+"-"+j).appendTo(".scene")//鼠标按下事件  添加每个div坐标   给每个div添加id，属性值为坐标   放入场景
+				}
+			}
+		}while($(".lei").length!=count) //判断雷的个数20
+
+
+		function mousedownhandler(e){
+			e.preventDefault();//清除系统默认右击效果
+			if (e.which==1) {
+				leftclick.call(this);
+			}else if (e.which==3) {
+				rightclick.call(this);
+			}
+		}
+		function leftclick(){
+			if($(this).hasClass("flag")){
+				return;
+			}
+			if ($(this).hasClass("lei")) {
+				// alert("lose");
+				// $(".lei").addClass("show");
+				lose();
+			}else{
+				$(this).addClass("num");
+				var n=0;
+				var pos=$(this).data("pos");//当前div坐标
+				// $("#"+(pos.x-1)+"-"+(pos.y-1))
+				// $("#"+(pos.x)+"-"+(pos.y))
+				// $("#"+(pos.x+1)+"-"+(pos.y+1))
+
+				for (var i =pos.x-1; i <=pos.x+1; i++) {
+					for (var j = pos.y-1; j <=pos.y+1; j++) {
+						if($("#"+i+"-"+j).hasClass("lei")){//通过id值判断
+							n++;
+						}
+					}
+				}
+				$(this).text(n);
+				if (n==0) {
+					//遍历自身在内的相邻九个div
+					for (var i =pos.x-1; i <=pos.x+1; i++) {
+						for (var j = pos.y-1; j <=pos.y+1; j++) {
+							if ($("#"+i+"-"+j).length!=0) {//处理周边div的情况
+								if (!$("#"+i+"-"+j).data("check")){
+									$("#"+i+"-"+j).data("check",true);//处理重复递归调用
+									leftclick.call($("#"+i+"-"+j)[0])//递归调用leftclick()，使之成为jQuery对象
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		function rightclick(){
+			if($(this).hasClass("num")){
+				return;
+			}
+			
+			if($(this).hasClass("flag")){
+				$(".flagbox").text(function(index,num){
+					num=parseInt(num);
+					return ++num;
+				})
+			}else{
+				if($(".flag").length==count){
+					return;
+				}
+				$(".flagbox").text(function(index,num){
+					num=parseInt(num);
+					return --num;
+				})
+			}
+			$(this).toggleClass("flag");
+			if ($(".flag").filter(".lei").length==count){
+				alert("success");
+			}
+			clearInterval(t);
+		}
+		//contextmenu
+		//addEventListener("click")
+		$(document).on("contextmenu",false)//消除右击系统默认弹出的菜单功能
+		var t=setInterval(function(){
+			$(".time").text(function(index,n){
+				var times=parseInt(n);
+				return --times;
+			})
+			if ($(".time").text()==0) {
+				lose()
+			}
+		},1000)
+
+
+		function lose(){
+			alert("lose");
+			clearInterval(t);
+			$(".lei").addClass("show");
+			$(".block:not(.lei)").addClass("num")
+			$(".scene").css("transform","none").css({border:"none",boxShadow:"none"});
+			$(".block").each(function(index){
+				$(this).css({border:0});
+				var randomleft=Math.random()*600-300;
+				var randomtop=Math.random()*200-100;
+				var randomdeg=Math.random()*90;
+				$(this).animate({left:randomleft,top:randomtop},500,function(){
+					$(this).css("transform","rotate("+randomdeg+"deg");
+				})
+			})
+		}
+	})
+	</script>
+	<style>
+	body,html{
+		transform-style:preserve-3d;
+		height: 100%;
+		background: linear-gradient(to bottom,blue,#fff);
+		overflow: hidden;
+	}
+	.scene{
+		transform:perspective(800px) rotateX(45deg);
+		width: 500px;
+		height: 500px;
+		margin: 0 auto;
+		border-top: 1px solid #999;
+		border-left: 1px solid #999;
+		box-shadow: 5px 5px 5px #333;
+		position: relative;
+	}
+	.block{
+		width: 49px;
+		height: 49px;
+		border-right: 1px solid #ccc;
+		border-bottom: 1px solid #ccc;
+		cursor: pointer;
+		float: left;
+		box-shadow: 0 0 2px #333 inset;
+		position: relative;
+	}
+	.show{
+		background:url("img/zd.png"); 
+	}
+	.num{
+		background: #fff;
+		font-size: 12px;
+		line-height: 50px;
+		font-weight: bold;
+		text-align: center;
+	}
+	.time{
+		background:url("img/deskclock.png") left center no-repeat;
+		width:120px;
+		height:60px;
+		position: absolute;
+		font-size:30px;
+		font-weight: bold;
+		border: 1px solid red;
+		text-align:right;
+		line-height: 60px;
+		right:8px;
+		top:30px;
+	}
+	.flagbox{
+		background:url("img/zd.png") left center no-repeat;
+		width:120px;
+		height:60px;
+		position: absolute;
+		font-size:30px;
+		font-weight: bold;
+		border: 1px solid red;
+		text-align:right;
+		line-height:60px;
+		right:8px;
+		top:120px;
+	}
+	.flag{
+		background:url("img/flag.png");
+	}
+	</style>
+</head>
+<body>
+	<div class="scene"></div>
+	<div class="time">150</div>
+	<div class="flagbox">20</div>
+</body>
+</html>
